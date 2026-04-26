@@ -7,27 +7,32 @@ from core import load, open_era5
 
 def get_era5_variables(time_slice, lat, lon, name, cache = True):
     """
-    Open ERA5 variables relating to Surfacer Energy Balance and Cloud Effect: 
+    Open ERA5 variables relating to Surface Energy Balance and Cloud Effect: 
     - Surface Net Solar Radiation (snsr)
     - Surface Net Solar Radiation Clear Sky (snsr_cs)
-    - TOA Incident Solar Radiation (toa)
     - Total Cloud Cover (cc)
+     - 2-meter temperature (t2m)
 
-    Data are loaded lazily — nothing is downloaded until you call
-    ``.compute()`` / ``.load()`` or use the :func:`load` helper.
+    If cache file ``era5_{name}.nc`` exists and ``cache = True``, it is read directly from the disk. If not, the data is downloaded and saved for future calls. 
 
     Paramaters
     ----------
-    time_slice : (start, end)
-    lat : latitude
-    lon : longitude
-    name : name of NetCDF file
+    time_slice : tuple of str
+        Start and end data, ex. ``("2025-06-01", "2025-06-03")``
+    lat : tuple of a float
+        Latitude, ex. ``(-125, -65)``
+    lon : tuple of a float 
+        Longitude, ex. ``(25, 50)``
+    name : str
+        Label used to build cache filename, (``era5_{name}.nc``)
+    cache : boolean (optional)
+        Read or write to a local .nc file. Default is True
 
     Returns
     ----------
-    xr.DataArray
-        Lazy DataArray of snsr (W/m^s), snsr_cs (W/m^2), toa (W/m^2), cc (0-1)
-
+    tuple of xr.DataArray
+        contains: ``(snsr, snsr_cs, cc, t2m)``
+        
     Example 
     ----------
     ds = get_era5_variables(
@@ -65,6 +70,26 @@ def get_era5_variables(time_slice, lat, lon, name, cache = True):
     return (ds['snsr'], ds['snsr_cs'], ds['cc'], ds['t2m'])
 
 def cloud_stats(ds):
+    """
+    Calculate cloud statistics and add them to the dataset.
+
+    Adds two derived variables:
+    
+    a) Cloud Radiative Effect (cre) - Reduction in the surface shortwave radiation due to the clouds. (clear sky minus all sky radiation) Positive values mean that clouds are blocking solar radiation.
+    b) Solar Efficiency (eff) - Describes the fraction clear-sky radiation that reaches the surface. 
+    
+    Parameters
+    -----------
+    ds : xr.Dataset 
+        Must include:
+            "snsr" : surface_net_solar_radiation
+            "snsr_cs" : surface_net_solar_radiation_clear_sky
+
+    Returns
+    -----------
+    xr.Dataset
+        the inputted dataset with the added variables
+    """
     # Cloud radiative effect
     ds['cre'] = (ds['snsr_cs'] - ds['snsr'])
     # Efficiency - how much solar radiation reaches the surface (0-1)
@@ -73,6 +98,25 @@ def cloud_stats(ds):
     return ds
 
 def map_features(ax):
+    """
+    Adds geographic features to Cartopy GeoAxes
+    
+    Additional Features:
+    - Coastlines (linewidth: 0.8)
+    - Borders (dashed, linewidth: 0.5)
+    - Land (light gray, 30% opacity)
+    - US States (gray, 20% opacity)
+    - Gridlines with axis label (lindwidth: 0.5, 50% opacity)
+
+    Parameters:
+    -----------
+    ax : ax
+
+    Returns:
+    -----------
+    None
+        only adds features to the current ``ax``
+    """
     # 3. Add geographic features
     ax.coastlines(linewidth=0.8)
     ax.add_feature(cfeature.BORDERS, linewidth=0.5, linestyle='--')
@@ -82,10 +126,36 @@ def map_features(ax):
 
 
 def mapping(title, filename, ds, time = 0, n_rows = 1):
+    """
+    Plot CRE, solar efficiency, and 2meter temperature and a multi-paneled map figure, using a Robinson projection
+
+    The panel are arranged in ``n_rows``, with columns filled in automatically. 
+    Each panel used ``map_features()``. 
+    Then the figure is saved locally. 
+    
+    Parameters:
+    -----------
+    title: str
+        Map title displayed above all panels
+    filename: str
+        name for the saved figure
+    ds: xr.Dataset 
+        must contain cre, eff, t2m with a time dimension (taken from get_era5_variables and cloud_stats)
+    time: int (optional)
+    n_rows: int, optional
+        number of rows in the subplot grid (allows maps to be stacked on one column)
+
+    Returns:
+    ----------
+    fig, ax 
+        fig : matplotlib.figure.Figure
+        ax : list of cartopy.mpl.geoaxes.GeoAxes
+            All subplot axes in row-major order
+    """
     panels = [
         {
             "data": ds['cre'].isel(time=time),
-            "label": "Cloud Radiative Effect (kW/m^2)",
+            "label": "Cloud Radiative Effect (J/m^2)",
             "subtitle": "Cloud Radiative Effect",
             "cmap": "RdBu_r"
         },
@@ -129,7 +199,7 @@ def mapping(title, filename, ds, time = 0, n_rows = 1):
     print (f"{filename} saved")
     plt.show()
 
-    return fig, ax
+    return fig, axes_flat
 
 if __name__ == "__main__":
     ds = get_era5_variables(

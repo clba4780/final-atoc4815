@@ -13,7 +13,7 @@ def get_era5_variables(time_slice, lat, lon, name, cache = True):
     - Total Cloud Cover (cc) (0-1)
     - 2-meter temperature (t2m)(K)
 
-    If cache file ``era5_{name}.nc`` exists and ``cache = True``, it is read directly from the disk. If not, the data is downloaded and saved for future calls. 
+    If cache file ``era5_{name}.nc`` exists and ``cache = True``, it is read directly. If not, the data is downloaded and saved for future calls. 
 
     Paramaters
     ----------

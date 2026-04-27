@@ -1,5 +1,5 @@
 # Cloud cover effect on surface solar radition and 2m temperature
-A lightweight Python package for visualizing cloud effects on surface temperature and net solar radiation. Uses data from ERA5 reanalysis 2-meter temperature, cloud cover, surface net solar radiation, and surface net solar radiation clear sky. 
+A Python package for visualizing cloud effects on surface temperature and net solar radiation. Uses data from ERA5 reanalysis 2-meter temperature, cloud cover, surface net solar radiation, and surface net solar radiation clear sky. 
 
 # background
 Cloud effects vary depending on the time of day, season, location, and elevation. This package takes ERA5 observations and creates visualizations and comparisons to understand cloud effects at the surface. 

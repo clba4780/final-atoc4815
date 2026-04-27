@@ -18,7 +18,7 @@ pip install -e ".[plot]"
 # quickstart
 ```
 from grab_era5 import load, open_era5
-from project import get_era5_variables, cloud_stats, mapping
+from analysis import get_era5_variables, cloud_stats, mapping
 
 # 1. Open era5 and download the variables: 2m_temperature, cloud_cover, surface_net_solar_radiation, surface_net_solar_radiation_clear_sky
 

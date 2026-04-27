@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "project"
 version = "0.1.0"
-description = "Accessing ERA5 reanalysis data via ARCO-ERA5 and running analysis for radiation and temperature variables"
+description = "Accessing ERA5 reanalysis data via ARCO-ERA5 and running analysis for solar radiation and temperature variables"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"

@@ -7,11 +7,11 @@ from core import load, open_era5
 
 def get_era5_variables(time_slice, lat, lon, name, cache = True):
     """
-    Open ERA5 variables relating to Surface Energy Balance and Cloud Effect: 
+    Open ERA5 variables relating to Surface Energy Balance and Cloud Effects: 
     - Surface Net Solar Radiation (snsr)
     - Surface Net Solar Radiation Clear Sky (snsr_cs)
     - Total Cloud Cover (cc)
-     - 2-meter temperature (t2m)
+    - 2-meter temperature (t2m)
 
     If cache file ``era5_{name}.nc`` exists and ``cache = True``, it is read directly from the disk. If not, the data is downloaded and saved for future calls. 
 
@@ -30,7 +30,7 @@ def get_era5_variables(time_slice, lat, lon, name, cache = True):
 
     Returns
     ----------
-    tuple of xr.DataArray
+    tuple of xr.DataArrays
         contains: ``(snsr, snsr_cs, cc, t2m)``
         
     Example 
@@ -50,11 +50,11 @@ def get_era5_variables(time_slice, lat, lon, name, cache = True):
         return xr.open_dataset(fname + ".nc")
     
     print ("Downloading data set...")
-    # convert snsr, snsr_cs, and toa to W/km^2 and t2m to Celsius
+    # Download ERA5 variables and convert K --> °C
     snsr = load(open_era5("surface_net_solar_radiation", time_slice, lat, lon))
     snsr_cs = load(open_era5("surface_net_solar_radiation_clear_sky", time_slice, lat, lon))
     cc = load(open_era5("total_cloud_cover",time_slice, lat, lon))
-    t2m = load(open_era5("2m_temperature", time_slice, lat, lon)) - 273
+    t2m = load(open_era5("2m_temperature", time_slice, lat, lon)) - 273.15
     
     ds = xr.Dataset({
         "snsr" : snsr,
@@ -67,7 +67,7 @@ def get_era5_variables(time_slice, lat, lon, name, cache = True):
         print ("saving dataset...")
         ds.to_netcdf(fname + ".nc")
     
-    return (ds['snsr'], ds['snsr_cs'], ds['cc'], ds['t2m'])
+    return (xr.open_dataset(fname + ".nc"))
 
 def cloud_stats(ds):
     """
@@ -75,7 +75,7 @@ def cloud_stats(ds):
 
     Adds two derived variables:
     
-    a) Cloud Radiative Effect (cre) - Reduction in the surface shortwave radiation due to the clouds. (clear sky minus all sky radiation) Positive values mean that clouds are blocking solar radiation.
+    a) Cloud Radiative Effect (cre) - Reduction in the surface shortwave radiation due to the clouds. (clear sky minus all sky radiation) Shows how effective the clouds are at blocking solar radiation.
     b) Solar Efficiency (eff) - Describes the fraction clear-sky radiation that reaches the surface. 
     
     Parameters
@@ -127,10 +127,10 @@ def map_features(ax):
 
 def mapping(title, filename, ds, time = 0, n_rows = 1):
     """
-    Plot CRE, solar efficiency, and 2meter temperature and a multi-paneled map figure, using a Robinson projection
+    Plot CRE, solar efficiency, and 2meter temperature on a multi-paneled map figure, using a Robinson projection
 
     The panel are arranged in ``n_rows``, with columns filled in automatically. 
-    Each panel used ``map_features()``. 
+    Each panel uses ``map_features()``. 
     Then the figure is saved locally. 
     
     Parameters:
@@ -181,7 +181,7 @@ def mapping(title, filename, ds, time = 0, n_rows = 1):
         subplot_kw={'projection': ccrs.Robinson()},   # 1. Choose map projection
         constrained_layout = True
     )
-
+    # normalizes the return value of plt.subplots so the for loop can always iterate over the axis in the same way
     axes_flat = list(ax.flat) if hasattr(ax, "flat") else [ax]
 
     for ax, panel in zip(axes_flat, panels):
@@ -206,13 +206,13 @@ if __name__ == "__main__":
         time_slice = ("2025-06-01", "2025-08-31"),
         lat = (25, 50),
         lon = (-125, -65), 
-        name = 'summer2025_contigUSA'
+        name = 'analysis'
     )
 
     cloud_stats(ds)
 
     mapping(
-        "Cloud, Solar Radiation, & Temperature Analysis - Summer 2025", 
+        "Cloud Radiative Effect, Solar Radiation, & Temperature Analysis - Summer 2025", 
         filename = "analysis",
         ds = ds, 
     )

@@ -4,32 +4,31 @@ import numpy as np
 from analysis import get_era5_variables
 
 """
-Example 1: Create a scatterplot comparing the 
-Total Cloud Cover to the Net Surface Solar Radiation over different regions. 
+Example 1: Create a scatterplot comparing the Total Cloud Cover to the Net Surface Solar Radiation over the Continuenal US for Summer 2025. 
 """
 
-# load variables from era5
+# Load climate variables from ERA5
 ds = get_era5_variables(
-    time_slice= ("2025-06-01", "2025-08-31"),
-    lat = (25,50), 
-    lon = (-125, -65),
-    name = "summer2025_contigUS"
-)
+        time_slice = ("2025-06-01", "2025-08-31"),
+        lat = (25, 50),
+        lon = (-125, -65), 
+        name = 'analysis'
+    )
 
-# cloud statistics
-cre = ds['snsr_cs'] - ds['snsr']
-ds['eff'] = (ds['snsr']/ds['snsr_cs']).clip(0,1)
+# Compute derived variables
+ds['eff'] = (ds['snsr']/ds['snsr_cs'])
 eff = ds['eff']
 cc = ds['cc']
 
 times = ds['time'].values
-months = ds['time'].dt.month.values.flatten()
+months = ds['time'].dt.month.values.flatten() # get the month integers (6,7,8) to color code points
 
-# Take the spatial mean then flatten
+# Collapse the spatial dimensions (lat/lon) into a sinle mean/timestep
+# gives one (cc,eff) pair per day (US average) 
 cc = ds['cc'].mean(dim = ['latitude', 'longitude']).values.flatten()
 eff = ds['eff'].mean(dim = ['latitude', 'longitude']).values.flatten()
 
-# boolean mask to filter out invalid data
+# Mask removes any invalid data (NaN or Inf values)
 mask = np.isfinite(cc) & np.isfinite(eff)
 cc = cc[mask]
 eff = eff[mask]
@@ -40,10 +39,11 @@ if len(cc) <2:
     print ("Skipping: not enough data")
 
 else:
-# resample to avoid overplotting for large arrays
-# keeps only 30% of points without removing any of the data 
+# Randomly keeps 30% to reduce over plotting for long time series
+# same index array (resample) is applies to cc,eff, and months
+# each point represents the same timestep
     resample = np.random.choice(len(cc), size=max(2,int(len(cc)*0.3)), replace = False)
-    # use the same resample for both so the points still match
+    # use the same resample for all variables so the points still match
     # (makes the scatter plot cleaner for long term analysis)
     cc = cc[resample]
     eff = eff[resample]
@@ -52,7 +52,7 @@ else:
 fig, ax = plt.subplots(figsize=(8,5))
 
 
-# Color by month instead of repeating cc on color axis
+# Create scatterplot
 cmap = cm.get_cmap('plasma', 3)
 sc = ax.scatter(cc, eff, c=months, cmap=cmap, vmin = 6, vmax =8, alpha=0.5, s=15, edgecolors='none')
 
@@ -60,17 +60,14 @@ cbar = fig.colorbar(sc, ax=ax, ticks=[6, 7, 8])
 cbar.set_label("Month")
 cbar.ax.set_yticklabels(['Jun', 'Jul', 'Aug'])
 
-    # Regression line
-m, b = np.polyfit(cc, eff, 1)
-x_line = np.linspace(cc.min(), cc.max(), 100)
-ax.plot(x_line, m * x_line + b, 'r--', linewidth=1.5, label=f'Trend (slope={m:.2f})')
 
 plt.xlabel("Total Cloud Cover (fraction)")
 plt.ylabel("Solar Efficiency (snsr/snsr_cs)")
 plt.title("Cloud Cover vs Solar Efficiency")
+plt.suptitle("Continental US - Jun, Jul, Aug 2025", fontsize = 10)
 plt.grid(alpha = 0.2)
 
 plt.tight_layout()
-plt.savefig("relationship.png", dpi = 150)
-print ("relationship.png saved")
+plt.savefig("example1.png", dpi = 150)
+print ("example1.png saved")
 plt.show()

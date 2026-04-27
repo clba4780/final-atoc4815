@@ -4,7 +4,7 @@ import numpy as np
 from analysis import get_era5_variables
 
 """
-Example 1: Create a scatterplot comparing the Total Cloud Cover to the Net Surface Solar Radiation over the Continuenal US for Summer 2025. 
+Example 1: Create a scatterplot comparing the Total Cloud Cover to the Solar Efficiency over the Continuenal US for Summer 2025. 
 """
 
 # Load climate variables from ERA5

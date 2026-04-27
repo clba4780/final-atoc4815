@@ -8,10 +8,10 @@ from core import load, open_era5
 def get_era5_variables(time_slice, lat, lon, name, cache = True):
     """
     Open ERA5 variables relating to Surface Energy Balance and Cloud Effects: 
-    - Surface Net Solar Radiation (snsr)
-    - Surface Net Solar Radiation Clear Sky (snsr_cs)
-    - Total Cloud Cover (cc)
-    - 2-meter temperature (t2m)
+    - Surface Net Solar Radiation (snsr) (J/m^s) 
+    - Surface Net Solar Radiation Clear Sky (snsr_cs) (J/m^s)
+    - Total Cloud Cover (cc) (0-1)
+    - 2-meter temperature (t2m)(K)
 
     If cache file ``era5_{name}.nc`` exists and ``cache = True``, it is read directly from the disk. If not, the data is downloaded and saved for future calls. 
 

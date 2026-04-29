@@ -124,6 +124,85 @@ def map_features(ax):
     ax.add_feature(cfeature.STATES, edgecolor = 'gray', linewidth = 0.5, alpha = 0.2)
     ax.gridlines(draw_labels=True, linewidth=0.5, alpha=0.5)
 
+def plot_maps(
+    ds: xr.Dataset,
+    variables: list[str],
+    time: int = 0,
+    n_rows: int = 1,
+    cmap_dict: dict | None = None,
+    titles: dict | None = None,
+    projection=ccrs.Robinson(),
+):
+    """
+    General-purpose map plotting for ERA5-style datasets.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+    variables : list of str
+        Variables in dataset to plot
+    time : int
+        Time index to plot
+    n_rows : int
+        Number of subplot rows
+    cmap_dict : dict
+        Optional mapping variable -> colormap
+    titles : dict
+        Optional mapping variable -> subplot title
+    projection : cartopy.crs
+    """
+
+    # Default fallbacks
+    cmap_dict = cmap_dict or {}
+    titles = titles or {}
+
+    # Build panel list dynamically
+    panels = []
+    for var in variables:
+        if var not in ds:
+            raise ValueError(f"{var} not found in dataset")
+
+        panels.append({
+            "data": ds[var].isel(time=time),
+            "cmap": cmap_dict.get(var, "viridis"),
+            "title": titles.get(var, var),
+            "label": ds[var].attrs.get("units", "")
+        })
+
+    # Grid layout
+    n_cols = -(-len(panels) // n_rows)
+
+    fig, ax = plt.subplots(
+        nrows=n_rows,
+        ncols=n_cols,
+        figsize=(7 * n_cols, 4 * n_rows),
+        subplot_kw={"projection": projection},
+        constrained_layout=True
+    )
+
+    axes_flat = list(ax.flat) if hasattr(ax, "flat") else [ax]
+
+    for axis, panel in zip(axes_flat, panels):
+        im = panel["data"].plot(
+            ax=axis,
+            transform=ccrs.PlateCarree(),
+            cmap=panel["cmap"],
+            cbar_kwargs={
+                "label": panel["label"],
+                "shrink": 0.7
+            }
+        )
+
+        # reuse your helper
+        map_features(axis)
+
+        axis.set_title(panel["title"], fontsize=10)
+
+    # Turn off unused axes
+    for axis in axes_flat[len(panels):]:
+        axis.set_visible(False)
+
+    return fig, axes_flat
 
 def mapping(title, filename, ds, time = 0, n_rows = 1):
     """
@@ -211,8 +290,7 @@ if __name__ == "__main__":
 
     cloud_stats(ds)
 
-    mapping(
-        "Cloud Radiative Effect, Solar Radiation, & Temperature Analysis - Summer 2025", 
-        filename = "analysis",
-        ds = ds, 
-    )
+    plot_maps(
+    ds,
+    variables=["cre", "eff", "t2m"],
+)
